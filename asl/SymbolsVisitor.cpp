@@ -120,7 +120,7 @@ std::any SymbolsVisitor::visitVariable_decl(AslParser::Variable_declContext *ctx
 
 std::any SymbolsVisitor::visitType(AslParser::TypeContext *ctx) {
   DEBUG_ENTER();
-  TypesMgr::TypeId t
+  TypesMgr::TypeId t;
   if (ctx->INT()) 
     t = Types.createIntegerTy();
 

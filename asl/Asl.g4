@@ -81,8 +81,7 @@ left_expr
         ;
 
 // Grammar for expressions with boolean, relational and aritmetic operators
-expr    : 
-        | op=(NOT|PLUS|MINUS) expr              # unary                              
+expr    : op=(NOT|PLUS|MINUS) expr              # unary                              
         | expr op=(MUL|DIV) expr                # arithmetic
         | expr op=(PLUS|MINUS) expr             # arithmetic
         | expr op=(EQUAL|NE|GT|GE|LT|LE) expr   # relational
@@ -133,10 +132,9 @@ WRITE     : 'write' ;
 ID        : ('a'..'z'|'A'..'Z') ('a'..'z'|'A'..'Z'|'_'|'0'..'9')* ;
 INTVAL    : ('0'..'9')+ ;
 FLOATVAL  : ('0'..'9')+ '.' ('0'..'9')+;
-CHARVAL   : '\'' ( ESC_SEQ | ~('\\'|'\'') ) '\''
+CHARVAL   : '\'' ( ESC_SEQ | ~('\\'|'\'') ) '\'';
 
-// Strings (in quotes) with escape sequences
-STRING    : '"' ( ESC_SEQ | ~('\\'|'"') )* '"' ;
+STRING    : '"' ( ESC_SEQ | ~('\\'|'"') )* '"' ; 
 
 fragment
 ESC_SEQ   : '\\' ('b'|'t'|'n'|'f'|'r'|'"'|'\''|'\\') ;

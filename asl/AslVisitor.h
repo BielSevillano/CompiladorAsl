@@ -45,13 +45,19 @@ public:
 
     virtual std::any visitLeft_expr(AslParser::Left_exprContext *context) = 0;
 
+    virtual std::any visitParent(AslParser::ParentContext *context) = 0;
+
     virtual std::any visitExprIdent(AslParser::ExprIdentContext *context) = 0;
 
     virtual std::any visitArithmetic(AslParser::ArithmeticContext *context) = 0;
 
     virtual std::any visitRelational(AslParser::RelationalContext *context) = 0;
 
+    virtual std::any visitUnary(AslParser::UnaryContext *context) = 0;
+
     virtual std::any visitValue(AslParser::ValueContext *context) = 0;
+
+    virtual std::any visitLogical(AslParser::LogicalContext *context) = 0;
 
     virtual std::any visitIdent(AslParser::IdentContext *context) = 0;
 

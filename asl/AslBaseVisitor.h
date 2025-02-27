@@ -67,6 +67,10 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitParent(AslParser::ParentContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitExprIdent(AslParser::ExprIdentContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -79,7 +83,15 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitUnary(AslParser::UnaryContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitValue(AslParser::ValueContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitLogical(AslParser::LogicalContext *ctx) override {
     return visitChildren(ctx);
   }
 
