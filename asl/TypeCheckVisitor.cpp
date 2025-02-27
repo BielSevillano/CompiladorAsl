@@ -256,6 +256,16 @@ std::any TypeCheckVisitor::visitLogical(AslParser::LogicalContext *ctx) {
   return 0;
 }
 
+std::any TypeCheckVisitor::visitParent(AslParser::ParentContext *ctx) {
+  DEBUG_ENTER();
+  visit(ctx->expr());
+  TypesMgr::TypeId t1 = getTypeDecor(ctx->expr());
+  putTypeDecor(ctx, t1);
+  putIsLValueDecor(ctx, getIsLValueDecor(ctx->expr()));
+  DEBUG_EXIT();
+  return 0;
+}
+
 std::any TypeCheckVisitor::visitValue(AslParser::ValueContext *ctx) {
   DEBUG_ENTER();
   TypesMgr::TypeId t;
@@ -265,6 +275,8 @@ std::any TypeCheckVisitor::visitValue(AslParser::ValueContext *ctx) {
     t = Types.createCharacterTy();
   else if (ctx->INTVAL())
     t = Types.createIntegerTy();
+  else if (ctx->BOOLVAL())
+    t = Types.createBooleanTy();
   putTypeDecor(ctx, t);
   putIsLValueDecor(ctx, false);
   DEBUG_EXIT();

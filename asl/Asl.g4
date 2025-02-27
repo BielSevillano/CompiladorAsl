@@ -46,7 +46,7 @@ declarations
         ;
 
 variable_decl
-        : VAR ID ':' type
+        : VAR ID (','ID)* ':' type
         ;
 
 type    : INT
@@ -90,6 +90,7 @@ expr    : op=(NOT|PLUS|MINUS) expr              # unary
         | INTVAL                                # value
         | FLOATVAL                              # value
         | CHARVAL                               # value
+        | BOOLVAL                               # value
         | ident                                 # exprIdent
         | '(' expr ')'                          # parent
         ;
@@ -129,6 +130,7 @@ FUNC      : 'func' ;
 ENDFUNC   : 'endfunc' ;
 READ      : 'read' ;
 WRITE     : 'write' ;
+BOOLVAL   : 'true' | 'false' ;
 ID        : ('a'..'z'|'A'..'Z') ('a'..'z'|'A'..'Z'|'_'|'0'..'9')* ;
 INTVAL    : ('0'..'9')+ ;
 FLOATVAL  : ('0'..'9')+ '.' ('0'..'9')+;

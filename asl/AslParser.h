@@ -12,12 +12,12 @@
 class  AslParser : public antlr4::Parser {
 public:
   enum {
-    T__0 = 1, T__1 = 2, T__2 = 3, T__3 = 4, ASSIGN = 5, EQUAL = 6, PLUS = 7, 
-    MUL = 8, DIV = 9, MINUS = 10, AND = 11, OR = 12, NOT = 13, NE = 14, 
-    GT = 15, GE = 16, LT = 17, LE = 18, VAR = 19, INT = 20, FLOAT = 21, 
-    BOOL = 22, CHAR = 23, IF = 24, THEN = 25, ELSE = 26, ENDIF = 27, FUNC = 28, 
-    ENDFUNC = 29, READ = 30, WRITE = 31, ID = 32, INTVAL = 33, FLOATVAL = 34, 
-    CHARVAL = 35, STRING = 36, COMMENT = 37, WS = 38
+    T__0 = 1, T__1 = 2, T__2 = 3, T__3 = 4, T__4 = 5, ASSIGN = 6, EQUAL = 7, 
+    PLUS = 8, MUL = 9, DIV = 10, MINUS = 11, AND = 12, OR = 13, NOT = 14, 
+    NE = 15, GT = 16, GE = 17, LT = 18, LE = 19, VAR = 20, INT = 21, FLOAT = 22, 
+    BOOL = 23, CHAR = 24, IF = 25, THEN = 26, ELSE = 27, ENDIF = 28, FUNC = 29, 
+    ENDFUNC = 30, READ = 31, WRITE = 32, BOOLVAL = 33, ID = 34, INTVAL = 35, 
+    FLOATVAL = 36, CHARVAL = 37, STRING = 38, COMMENT = 39, WS = 40
   };
 
   enum {
@@ -105,7 +105,8 @@ public:
     Variable_declContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *VAR();
-    antlr4::tree::TerminalNode *ID();
+    std::vector<antlr4::tree::TerminalNode *> ID();
+    antlr4::tree::TerminalNode* ID(size_t i);
     TypeContext *type();
 
 
@@ -319,6 +320,7 @@ public:
     antlr4::tree::TerminalNode *INTVAL();
     antlr4::tree::TerminalNode *FLOATVAL();
     antlr4::tree::TerminalNode *CHARVAL();
+    antlr4::tree::TerminalNode *BOOLVAL();
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };

@@ -80,6 +80,7 @@ public:
   std::any visitLogical(AslParser::LogicalContext *ctx);
   std::any visitValue(AslParser::ValueContext *ctx);
   std::any visitIdent(AslParser::IdentContext *ctx);
+  std::any visitParent(AslParser::ParentContext *ctx);
 
 private:
 
