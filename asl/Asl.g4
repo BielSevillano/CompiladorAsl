@@ -38,7 +38,15 @@ program : function+ EOF
 
 // A function has a name, a list of parameters and a list of statements
 function
-        : FUNC ID '(' ')' declarations statements ENDFUNC
+        : FUNC ID '(' parameters? ')' (':' type)? declarations statements ENDFUNC
+        ;
+
+parameters
+        : parameter (',' parameter)*
+        ;
+
+parameter
+        : ID ':' type
         ;
 
 declarations
@@ -62,17 +70,21 @@ statements
 // The different types of instructions
 statement
           // Assignment
-        : left_expr ASSIGN expr ';'           # assignStmt
+        : left_expr ASSIGN expr ';'                             # assignStmt
           // if-then-else statement (else is optional)
-        | IF expr THEN statements ENDIF       # ifStmt
-          // A function/procedure call has a list of arguments in parenthesis (possibly empty)
-        | ident '(' ')' ';'                   # procCall
+        | IF expr THEN statements (ELSE statements)? ENDIF      # ifStmt
+          // A function/procedure call 
+          // has a list of arguments in 
+          // parenthesis (possibly empty)
+        | ident '(' ')' ';'                                     # procCall
           // Read a variable
-        | READ left_expr ';'                  # readStmt
+        | READ left_expr ';'                                    # readStmt
           // Write an expression
-        | WRITE expr ';'                      # writeExpr
+        | WRITE expr ';'                                        # writeExpr
           // Write a string
-        | WRITE STRING ';'                    # writeString
+        | WRITE STRING ';'                                      # writeString
+        | WHILE expr DO statements ENDWHILE                     # whileStmt
+        | RETURN expr? ';'                                      # returnStmt
         ;
 
 // Grammar for left expressions (l-values in C++)
@@ -130,6 +142,10 @@ FUNC      : 'func' ;
 ENDFUNC   : 'endfunc' ;
 READ      : 'read' ;
 WRITE     : 'write' ;
+WHILE     : 'while' ;
+DO        : 'do' ;
+ENDWHILE  : 'endwhile' ;
+RETURN    : 'return' ;
 BOOLVAL   : 'true' | 'false' ;
 ID        : ('a'..'z'|'A'..'Z') ('a'..'z'|'A'..'Z'|'_'|'0'..'9')* ;
 INTVAL    : ('0'..'9')+ ;

@@ -23,6 +23,10 @@ public:
 
     virtual std::any visitFunction(AslParser::FunctionContext *context) = 0;
 
+    virtual std::any visitParameters(AslParser::ParametersContext *context) = 0;
+
+    virtual std::any visitParameter(AslParser::ParameterContext *context) = 0;
+
     virtual std::any visitDeclarations(AslParser::DeclarationsContext *context) = 0;
 
     virtual std::any visitVariable_decl(AslParser::Variable_declContext *context) = 0;
@@ -42,6 +46,10 @@ public:
     virtual std::any visitWriteExpr(AslParser::WriteExprContext *context) = 0;
 
     virtual std::any visitWriteString(AslParser::WriteStringContext *context) = 0;
+
+    virtual std::any visitWhileStmt(AslParser::WhileStmtContext *context) = 0;
+
+    virtual std::any visitReturnStmt(AslParser::ReturnStmtContext *context) = 0;
 
     virtual std::any visitLeft_expr(AslParser::Left_exprContext *context) = 0;
 

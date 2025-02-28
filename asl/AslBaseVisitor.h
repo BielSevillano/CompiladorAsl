@@ -23,6 +23,14 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitParameters(AslParser::ParametersContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitParameter(AslParser::ParameterContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitDeclarations(AslParser::DeclarationsContext *ctx) override {
     return visitChildren(ctx);
   }
@@ -60,6 +68,14 @@ public:
   }
 
   virtual std::any visitWriteString(AslParser::WriteStringContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitWhileStmt(AslParser::WhileStmtContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitReturnStmt(AslParser::ReturnStmtContext *ctx) override {
     return visitChildren(ctx);
   }
 
