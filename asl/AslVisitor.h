@@ -51,9 +51,13 @@ public:
 
     virtual std::any visitReturnStmt(AslParser::ReturnStmtContext *context) = 0;
 
-    virtual std::any visitLeft_expr(AslParser::Left_exprContext *context) = 0;
+    virtual std::any visitLeftIdent(AslParser::LeftIdentContext *context) = 0;
+
+    virtual std::any visitLeftArray(AslParser::LeftArrayContext *context) = 0;
 
     virtual std::any visitParent(AslParser::ParentContext *context) = 0;
+
+    virtual std::any visitArray(AslParser::ArrayContext *context) = 0;
 
     virtual std::any visitExprIdent(AslParser::ExprIdentContext *context) = 0;
 
@@ -62,6 +66,8 @@ public:
     virtual std::any visitRelational(AslParser::RelationalContext *context) = 0;
 
     virtual std::any visitUnary(AslParser::UnaryContext *context) = 0;
+
+    virtual std::any visitFuncCall(AslParser::FuncCallContext *context) = 0;
 
     virtual std::any visitValue(AslParser::ValueContext *context) = 0;
 

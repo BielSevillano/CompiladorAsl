@@ -89,7 +89,8 @@ statement
 
 // Grammar for left expressions (l-values in C++)
 left_expr
-        : ident
+        : ident                         # leftIdent
+        | ident '[' expr ']'            # leftArray
         ;
 
 // Grammar for expressions with boolean, relational and aritmetic operators
@@ -103,6 +104,8 @@ expr    : op=(NOT|PLUS|MINUS) expr              # unary
         | FLOATVAL                              # value
         | CHARVAL                               # value
         | BOOLVAL                               # value
+        | ident '[' expr ']'                    # array
+        | ident '(' (expr (',' expr)*)? ')'     # funcCall
         | ident                                 # exprIdent
         | '(' expr ')'                          # parent
         ;

@@ -211,13 +211,30 @@ std::any TypeCheckVisitor::visitWriteExpr(AslParser::WriteExprContext *ctx) {
 //   return r;
 // }
 
-std::any TypeCheckVisitor::visitLeft_expr(AslParser::Left_exprContext *ctx) {
+std::any TypeCheckVisitor::visitLeftIdent(AslParser::LeftIdentContext *ctx) {
   DEBUG_ENTER();
+
   visit(ctx->ident());
   TypesMgr::TypeId t1 = getTypeDecor(ctx->ident());
   putTypeDecor(ctx, t1);
   bool b = getIsLValueDecor(ctx->ident());
   putIsLValueDecor(ctx, b);
+  DEBUG_EXIT();
+  return 0;
+}
+
+std::any TypeCheckVisitor::visitLeftArray(AslParser::LeftArrayContext *ctx) {
+  DEBUG_ENTER();
+  visit(ctx->ident());
+  visit(ctx->expr());
+  TypesMgr::TypeId t1 = getTypeDecor(ctx->ident());
+  TypesMgr::TypeId t2 = getTypeDecor(ctx->expr());
+  if ((not Types.isErrorTy(t1)) and (not Types.isArrayTy(t1)))
+    Errors.nonArrayInArrayAccess(ctx->ident());
+  if ((not Types.isErrorTy(t2)) and (not Types.isIntegerTy(t2)))
+    Errors.nonIntegerIndexInArrayAccess(ctx->expr());  
+  putTypeDecor(ctx, t1);
+  putIsLValueDecor(ctx, true);
   DEBUG_EXIT();
   return 0;
 }
@@ -311,6 +328,74 @@ std::any TypeCheckVisitor::visitExprIdent(AslParser::ExprIdentContext *ctx) {
   putTypeDecor(ctx, t1);
   bool b = getIsLValueDecor(ctx->ident());
   putIsLValueDecor(ctx, b);
+  DEBUG_EXIT();
+  return 0;
+}
+
+std::any TypeCheckVisitor::visitArray(AslParser::ArrayContext *ctx) {
+  DEBUG_ENTER();
+  visit(ctx->ident());
+  visit(ctx->expr());
+  bool b = false;
+  TypesMgr::TypeId t1 = getTypeDecor(ctx->ident());
+  TypesMgr::TypeId t2 = getTypeDecor(ctx->expr());
+  if ((not Types.isErrorTy(t1)) and (not Types.isArrayTy(t1))) {
+    Errors.nonArrayInArrayAccess(ctx->ident());
+    b = true;
+  }
+
+  if ((not Types.isErrorTy(t2)) and (not Types.isIntegerTy(t2))) {
+    Errors.nonIntegerIndexInArrayAccess(ctx->expr());
+    b = true;
+  }
+
+  if (not b) {
+    TypesMgr::TypeId t = Types.getArrayElemType(t1);
+    putTypeDecor(ctx, t);
+    putIsLValueDecor(ctx, true);
+  }
+  DEBUG_EXIT();
+  return 0;
+}
+
+std::any TypeCheckVisitor::visitFuncCall(AslParser::FuncCallContext *ctx) {
+  DEBUG_ENTER();
+  visit(ctx->ident());
+  TypesMgr::TypeId t1 = getTypeDecor(ctx->ident());
+  bool b = false;
+
+  if (not Types.isErrorTy(t1) and (not Types.isFunctionTy(t1))) {
+    Errors.isNotCallable(ctx->ident());
+    b = true;
+  }
+  else if (not Types.isErrorTy(t1) and (Types.isVoidFunction(t1))) {
+    Errors.isNotFunction(ctx->ident());
+    b = true;
+  }
+
+  if (not Types.isErrorTy(t1) and Types.isFunctionTy(t1)) {
+    int n = Types.getNumOfParameters(t1);
+    int s = ctx->expr().size();
+    if (n != s) {
+      Errors.numberOfParameters(ctx);
+      b = true;
+    }
+  }
+
+  if (not b) {
+    int i = 0;
+    for (auto ctxExpr : ctx->expr()) {
+      visit(ctxExpr);
+      if (not Types.isErrorTy(getTypeDecor(ctxExpr))) {
+        TypesMgr::TypeId t2 = Types.getParameterType(t1, i);
+        if (not Types.isErrorTy(t2) and not Types.copyableTypes(t2, getTypeDecor(ctxExpr))) {
+        }
+      }
+      ++i;
+    }
+  }
+  putTypeDecor(ctx, t1);
+  putIsLValueDecor(ctx, false);
   DEBUG_EXIT();
   return 0;
 }

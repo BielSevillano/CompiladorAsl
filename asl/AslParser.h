@@ -12,13 +12,13 @@
 class  AslParser : public antlr4::Parser {
 public:
   enum {
-    T__0 = 1, T__1 = 2, T__2 = 3, T__3 = 4, T__4 = 5, ASSIGN = 6, EQUAL = 7, 
-    PLUS = 8, MUL = 9, DIV = 10, MINUS = 11, AND = 12, OR = 13, NOT = 14, 
-    NE = 15, GT = 16, GE = 17, LT = 18, LE = 19, VAR = 20, INT = 21, FLOAT = 22, 
-    BOOL = 23, CHAR = 24, IF = 25, THEN = 26, ELSE = 27, ENDIF = 28, FUNC = 29, 
-    ENDFUNC = 30, READ = 31, WRITE = 32, WHILE = 33, DO = 34, ENDWHILE = 35, 
-    RETURN = 36, BOOLVAL = 37, ID = 38, INTVAL = 39, FLOATVAL = 40, CHARVAL = 41, 
-    STRING = 42, COMMENT = 43, WS = 44
+    T__0 = 1, T__1 = 2, T__2 = 3, T__3 = 4, T__4 = 5, T__5 = 6, T__6 = 7, 
+    ASSIGN = 8, EQUAL = 9, PLUS = 10, MUL = 11, DIV = 12, MINUS = 13, AND = 14, 
+    OR = 15, NOT = 16, NE = 17, GT = 18, GE = 19, LT = 20, LE = 21, VAR = 22, 
+    INT = 23, FLOAT = 24, BOOL = 25, CHAR = 26, IF = 27, THEN = 28, ELSE = 29, 
+    ENDIF = 30, FUNC = 31, ENDFUNC = 32, READ = 33, WRITE = 34, WHILE = 35, 
+    DO = 36, ENDWHILE = 37, RETURN = 38, BOOLVAL = 39, ID = 40, INTVAL = 41, 
+    FLOATVAL = 42, CHARVAL = 43, STRING = 44, COMMENT = 45, WS = 46
   };
 
   enum {
@@ -285,12 +285,33 @@ public:
   class  Left_exprContext : public antlr4::ParserRuleContext {
   public:
     Left_exprContext(antlr4::ParserRuleContext *parent, size_t invokingState);
-    virtual size_t getRuleIndex() const override;
-    IdentContext *ident();
+   
+    Left_exprContext() = default;
+    void copyFrom(Left_exprContext *context);
+    using antlr4::ParserRuleContext::copyFrom;
 
+    virtual size_t getRuleIndex() const override;
+
+   
+  };
+
+  class  LeftArrayContext : public Left_exprContext {
+  public:
+    LeftArrayContext(Left_exprContext *ctx);
+
+    IdentContext *ident();
+    ExprContext *expr();
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
-   
+  };
+
+  class  LeftIdentContext : public Left_exprContext {
+  public:
+    LeftIdentContext(Left_exprContext *ctx);
+
+    IdentContext *ident();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
 
   Left_exprContext* left_expr();
@@ -312,6 +333,16 @@ public:
   public:
     ParentContext(ExprContext *ctx);
 
+    ExprContext *expr();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  ArrayContext : public ExprContext {
+  public:
+    ArrayContext(ExprContext *ctx);
+
+    IdentContext *ident();
     ExprContext *expr();
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -367,6 +398,17 @@ public:
     antlr4::tree::TerminalNode *NOT();
     antlr4::tree::TerminalNode *PLUS();
     antlr4::tree::TerminalNode *MINUS();
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+  };
+
+  class  FuncCallContext : public ExprContext {
+  public:
+    FuncCallContext(ExprContext *ctx);
+
+    IdentContext *ident();
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
