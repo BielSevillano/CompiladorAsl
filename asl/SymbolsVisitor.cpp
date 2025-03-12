@@ -77,26 +77,33 @@ std::any SymbolsVisitor::visitProgram(AslParser::ProgramContext *ctx) {
 std::any SymbolsVisitor::visitFunction(AslParser::FunctionContext *ctx) {
   DEBUG_ENTER();
   std::string funcName = ctx->ID()->getText();
-  SymTable::ScopeId sc = Symbols.pushNewScope(funcName);
-  putScopeDecor(ctx, sc);
-  std::vector<TypesMgr::TypeId> lParamsTy;
-    if (ctx->parameters() != nullptr)
-      lParamsTy = std::any_cast<std::vector<TypesMgr::TypeId>>(visit(ctx->parameters()));
-  visit(ctx->declarations());
-  // Symbols.print();
-  Symbols.popScope();
-  std::string ident = ctx->ID()->getText();
-  if (Symbols.findInCurrentScope(ident)) {
+  if (Symbols.findInCurrentScope(funcName)) {
     Errors.declaredIdent(ctx->ID());
   }
   else {
-    TypesMgr::TypeId t1;
-    if (ctx->type() != nullptr) 
-      t1 = getTypeDecor(ctx->type());
+    std::vector<TypesMgr::TypeId> lParamsTy;
+
+    if (ctx->parameters() != nullptr) 
+      for (auto param : ctx->parameters()->parameter()) 
+        lParamsTy.push_back(getTypeDecor(param));
+    else
+      lParamsTy = {};
+
+    TypesMgr::TypeId funcTy;
+    if (ctx->type() != nullptr) {
+      visit(ctx->type());
+      funcTy = Types.createFunctionTy(lParamsTy, getTypeDecor(ctx->type()));
+    }
     else 
-      t1 = Types.createVoidTy();
-    TypesMgr::TypeId t2 = Types.createFunctionTy(lParamsTy, t1);
-    Symbols.addFunction(ident, t2);
+      funcTy = Types.createFunctionTy(lParamsTy, Types.createVoidTy());
+
+    Symbols.addFunction(funcName, funcTy);
+    SymTable::ScopeId sc = Symbols.pushNewScope(funcName);
+    putScopeDecor(ctx, sc);
+    if (ctx->parameters() != nullptr)
+      visit(ctx->parameters());
+    visit(ctx->declarations());
+    Symbols.popScope();
   }
   // Symbols.print();
   DEBUG_EXIT();
@@ -105,14 +112,13 @@ std::any SymbolsVisitor::visitFunction(AslParser::FunctionContext *ctx) {
 
 std::any SymbolsVisitor::visitParameters(AslParser::ParametersContext *ctx) {
   DEBUG_ENTER();
-  std::vector<TypesMgr::TypeId> lParamsTy;
   for (auto param : ctx->parameter()) {
+    visit(param->type());
     TypesMgr::TypeId t1 = getTypeDecor(param->type());
-    Symbols.addLocalVar(param->ID()->getText(), t1);
-    lParamsTy.push_back(getTypeDecor(param->type()));
+    Symbols.addParameter(param->ID()->getText(), t1);
   }
   DEBUG_EXIT();
-  return lParamsTy;
+  return 0;
 }
 
 std::any SymbolsVisitor::visitDeclarations(AslParser::DeclarationsContext *ctx) {

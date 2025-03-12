@@ -362,18 +362,18 @@ std::any TypeCheckVisitor::visitFuncCall(AslParser::FuncCallContext *ctx) {
   DEBUG_ENTER();
   visit(ctx->ident());
   TypesMgr::TypeId t1 = getTypeDecor(ctx->ident());
-  bool b = false;
+  bool b = Types.isErrorTy(t1);
 
-  if (not Types.isErrorTy(t1) and (not Types.isFunctionTy(t1))) {
+  if (not b and (not Types.isFunctionTy(t1))) {
     Errors.isNotCallable(ctx->ident());
     b = true;
   }
-  else if (not Types.isErrorTy(t1) and (Types.isVoidFunction(t1))) {
+  else if (not b and (Types.isVoidFunction(t1))) {
     Errors.isNotFunction(ctx->ident());
     b = true;
   }
 
-  if (not Types.isErrorTy(t1) and Types.isFunctionTy(t1)) {
+  if (not b) {
     int n = Types.getNumOfParameters(t1);
     int s = ctx->expr().size();
     if (n != s) {
@@ -394,8 +394,17 @@ std::any TypeCheckVisitor::visitFuncCall(AslParser::FuncCallContext *ctx) {
       ++i;
     }
   }
-  putTypeDecor(ctx, t1);
-  putIsLValueDecor(ctx, false);
+
+  if (not b) {
+    TypesMgr::TypeId t = Types.getFuncReturnType(t1);
+    putTypeDecor(ctx, t);
+    putIsLValueDecor(ctx, false);
+  }
+  else {
+    TypesMgr::TypeId t = Types.createErrorTy();
+    putTypeDecor(ctx, t);
+    putIsLValueDecor(ctx, false);
+  }
   DEBUG_EXIT();
   return 0;
 }
