@@ -38,7 +38,7 @@ program : function+ EOF
 
 // A function has a name, a list of parameters and a list of statements
 function
-        : FUNC ID '(' parameters? ')' (':' type)? declarations statements ENDFUNC
+        : FUNC ID '(' parameters? ')' (':' basic_type)? declarations statements ENDFUNC
         ;
 
 parameters
@@ -57,10 +57,20 @@ variable_decl
         : VAR ID (','ID)* ':' type
         ;
 
-type    : INT
+type   
+        : basic_type
+        | array_type
+        ;
+
+basic_type    
+        : INT
         | FLOAT
         | BOOL
         | CHAR
+        ;
+
+array_type    
+        : ARRAY '[' INTVAL ']' OF basic_type
         ;
 
 statements
@@ -76,7 +86,7 @@ statement
           // A function/procedure call 
           // has a list of arguments in 
           // parenthesis (possibly empty)
-        | ident '(' ')' ';'                                     # procCall
+        | ident '(' (expr (',' expr)*)? ')' ';'                 # procCall
           // Read a variable
         | READ left_expr ';'                                    # readStmt
           // Write an expression
@@ -137,6 +147,8 @@ INT       : 'int';
 FLOAT     : 'float';
 BOOL      : 'bool';
 CHAR      : 'char';
+ARRAY     : 'array';
+OF        : 'of';
 IF        : 'if' ;
 THEN      : 'then' ;
 ELSE      : 'else' ;

@@ -43,6 +43,14 @@ public:
     return visitChildren(ctx);
   }
 
+  virtual std::any visitBasic_type(AslParser::Basic_typeContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
+  virtual std::any visitArray_type(AslParser::Array_typeContext *ctx) override {
+    return visitChildren(ctx);
+  }
+
   virtual std::any visitStatements(AslParser::StatementsContext *ctx) override {
     return visitChildren(ctx);
   }

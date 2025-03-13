@@ -176,6 +176,20 @@ std::any TypeCheckVisitor::visitProcCall(AslParser::ProcCallContext *ctx) {
     ;
   } else if (not Types.isFunctionTy(t1)) {
     Errors.isNotCallable(ctx->ident());
+  } else if (Types.getNumOfParameters(t1) != ctx->expr().size()) {
+    Errors.numberOfParameters(ctx);
+  } else {
+    int i = 0;
+    for (auto ctxExpr : ctx->expr()) {
+      visit(ctxExpr);
+      if (not Types.isErrorTy(getTypeDecor(ctxExpr))) {
+        TypesMgr::TypeId t2 = Types.getParameterType(t1, i);
+        if (not Types.isErrorTy(t2) and not Types.copyableTypes(t2, getTypeDecor(ctxExpr))) {
+          Errors.incompatibleParameter(ctx, i, ctxExpr);
+        }
+      }
+      ++i;
+    }
   }
   DEBUG_EXIT();
   return 0;
@@ -229,12 +243,25 @@ std::any TypeCheckVisitor::visitLeftArray(AslParser::LeftArrayContext *ctx) {
   visit(ctx->expr());
   TypesMgr::TypeId t1 = getTypeDecor(ctx->ident());
   TypesMgr::TypeId t2 = getTypeDecor(ctx->expr());
-  if ((not Types.isErrorTy(t1)) and (not Types.isArrayTy(t1)))
+  bool b = false;
+  if ((not Types.isErrorTy(t1)) and (not Types.isArrayTy(t1))) {
     Errors.nonArrayInArrayAccess(ctx->ident());
-  if ((not Types.isErrorTy(t2)) and (not Types.isIntegerTy(t2)))
-    Errors.nonIntegerIndexInArrayAccess(ctx->expr());  
-  putTypeDecor(ctx, t1);
-  putIsLValueDecor(ctx, true);
+    b = true;
+  }
+  if ((not Types.isErrorTy(t2)) and (not Types.isIntegerTy(t2))) {
+    Errors.nonIntegerIndexInArrayAccess(ctx->expr());
+    b = true;
+  }
+  if (not b) { 
+    TypesMgr::TypeId t = Types.getArrayElemType(t1);
+    putTypeDecor(ctx, t);
+    putIsLValueDecor(ctx, true);
+  }
+  else {
+    TypesMgr::TypeId t = Types.createErrorTy();
+    putTypeDecor(ctx, t);
+    putIsLValueDecor(ctx, true);
+  }
   DEBUG_EXIT();
   return 0;
 }
@@ -351,6 +378,11 @@ std::any TypeCheckVisitor::visitArray(AslParser::ArrayContext *ctx) {
 
   if (not b) {
     TypesMgr::TypeId t = Types.getArrayElemType(t1);
+    putTypeDecor(ctx, t);
+    putIsLValueDecor(ctx, true);
+  }
+  else {
+    TypesMgr::TypeId t = Types.createErrorTy();
     putTypeDecor(ctx, t);
     putIsLValueDecor(ctx, true);
   }

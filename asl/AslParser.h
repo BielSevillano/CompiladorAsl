@@ -15,16 +15,18 @@ public:
     T__0 = 1, T__1 = 2, T__2 = 3, T__3 = 4, T__4 = 5, T__5 = 6, T__6 = 7, 
     ASSIGN = 8, EQUAL = 9, PLUS = 10, MUL = 11, DIV = 12, MINUS = 13, AND = 14, 
     OR = 15, NOT = 16, NE = 17, GT = 18, GE = 19, LT = 20, LE = 21, VAR = 22, 
-    INT = 23, FLOAT = 24, BOOL = 25, CHAR = 26, IF = 27, THEN = 28, ELSE = 29, 
-    ENDIF = 30, FUNC = 31, ENDFUNC = 32, READ = 33, WRITE = 34, WHILE = 35, 
-    DO = 36, ENDWHILE = 37, RETURN = 38, BOOLVAL = 39, ID = 40, INTVAL = 41, 
-    FLOATVAL = 42, CHARVAL = 43, STRING = 44, COMMENT = 45, WS = 46
+    INT = 23, FLOAT = 24, BOOL = 25, CHAR = 26, ARRAY = 27, OF = 28, IF = 29, 
+    THEN = 30, ELSE = 31, ENDIF = 32, FUNC = 33, ENDFUNC = 34, READ = 35, 
+    WRITE = 36, WHILE = 37, DO = 38, ENDWHILE = 39, RETURN = 40, BOOLVAL = 41, 
+    ID = 42, INTVAL = 43, FLOATVAL = 44, CHARVAL = 45, STRING = 46, COMMENT = 47, 
+    WS = 48
   };
 
   enum {
     RuleProgram = 0, RuleFunction = 1, RuleParameters = 2, RuleParameter = 3, 
-    RuleDeclarations = 4, RuleVariable_decl = 5, RuleType = 6, RuleStatements = 7, 
-    RuleStatement = 8, RuleLeft_expr = 9, RuleExpr = 10, RuleIdent = 11
+    RuleDeclarations = 4, RuleVariable_decl = 5, RuleType = 6, RuleBasic_type = 7, 
+    RuleArray_type = 8, RuleStatements = 9, RuleStatement = 10, RuleLeft_expr = 11, 
+    RuleExpr = 12, RuleIdent = 13
   };
 
   explicit AslParser(antlr4::TokenStream *input);
@@ -51,6 +53,8 @@ public:
   class DeclarationsContext;
   class Variable_declContext;
   class TypeContext;
+  class Basic_typeContext;
+  class Array_typeContext;
   class StatementsContext;
   class StatementContext;
   class Left_exprContext;
@@ -82,7 +86,7 @@ public:
     StatementsContext *statements();
     antlr4::tree::TerminalNode *ENDFUNC();
     ParametersContext *parameters();
-    TypeContext *type();
+    Basic_typeContext *basic_type();
 
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
@@ -153,6 +157,20 @@ public:
   public:
     TypeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
     virtual size_t getRuleIndex() const override;
+    Basic_typeContext *basic_type();
+    Array_typeContext *array_type();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  TypeContext* type();
+
+  class  Basic_typeContext : public antlr4::ParserRuleContext {
+  public:
+    Basic_typeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
     antlr4::tree::TerminalNode *INT();
     antlr4::tree::TerminalNode *FLOAT();
     antlr4::tree::TerminalNode *BOOL();
@@ -163,7 +181,23 @@ public:
    
   };
 
-  TypeContext* type();
+  Basic_typeContext* basic_type();
+
+  class  Array_typeContext : public antlr4::ParserRuleContext {
+  public:
+    Array_typeContext(antlr4::ParserRuleContext *parent, size_t invokingState);
+    virtual size_t getRuleIndex() const override;
+    antlr4::tree::TerminalNode *ARRAY();
+    antlr4::tree::TerminalNode *INTVAL();
+    antlr4::tree::TerminalNode *OF();
+    Basic_typeContext *basic_type();
+
+
+    virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
+   
+  };
+
+  Array_typeContext* array_type();
 
   class  StatementsContext : public antlr4::ParserRuleContext {
   public:
@@ -197,6 +231,8 @@ public:
     ProcCallContext(StatementContext *ctx);
 
     IdentContext *ident();
+    std::vector<ExprContext *> expr();
+    ExprContext* expr(size_t i);
 
     virtual std::any accept(antlr4::tree::ParseTreeVisitor *visitor) override;
   };
