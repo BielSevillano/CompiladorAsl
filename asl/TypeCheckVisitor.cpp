@@ -84,8 +84,11 @@ std::any TypeCheckVisitor::visitProgram(AslParser::ProgramContext *ctx) {
 
 std::any TypeCheckVisitor::visitFunction(AslParser::FunctionContext *ctx) {
   DEBUG_ENTER();
+  
   SymTable::ScopeId sc = getScopeDecor(ctx);
+  TypesMgr::TypeId t1 = getTypeDecor(ctx);
   Symbols.pushThisScope(sc);
+  setCurrentFunctionTy(t1);
   // Symbols.print();
   visit(ctx->statements());
   Symbols.popScope();
@@ -163,6 +166,57 @@ std::any TypeCheckVisitor::visitWhileStmt(AslParser::WhileStmtContext *ctx) {
 
 std::any TypeCheckVisitor::visitReturnStmt(AslParser::ReturnStmtContext *ctx) {
   DEBUG_ENTER();
+  TypesMgr::TypeId f = getCurrentFunctionTy();
+  TypesMgr::TypeId t1;
+  bool e = false; 
+  if (Types.isErrorTy(f)) {
+    e = true;
+  } 
+  else if (ctx->expr() == nullptr) {
+    if (not Types.isVoidFunction(f)) {
+      Errors.incompatibleReturn(ctx->RETURN());
+      e = true;
+    }
+    else {
+      t1 = Types.createVoidTy();
+    }
+  }
+  else {
+    visit(ctx->expr());
+    TypesMgr::TypeId t1 = getTypeDecor(ctx->expr());
+
+    if (Types.isErrorTy(t1)) {
+      e = true;
+    }
+    else if (Types.isVoidFunction(f)) {
+      Errors.incompatibleReturn(ctx->RETURN());
+      e = true;
+    }
+    else {
+      TypesMgr::TypeId t2 = Types.getFuncReturnType(f);
+      if (Types.isErrorTy(t2)) {
+        e = true;
+      }
+      else if (not Types.copyableTypes(t2, t1)) {
+        Errors.incompatibleReturn(ctx->RETURN());
+        e = true;
+      }
+      else {
+        t1 = t2;
+      }
+    }  
+  }
+
+  if (not e) {
+    putTypeDecor(ctx, t1);
+    putIsLValueDecor(ctx, false);
+  }
+  else {
+    TypesMgr::TypeId t = Types.createErrorTy();
+    putTypeDecor(ctx, t);
+    putIsLValueDecor(ctx, false);
+  }
+
   DEBUG_EXIT();
   return 0;
 }

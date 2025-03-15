@@ -97,6 +97,7 @@ std::any SymbolsVisitor::visitFunction(AslParser::FunctionContext *ctx) {
     else 
       funcTy = Types.createFunctionTy(lParamsTy, Types.createVoidTy());
 
+    putTypeDecor(ctx, funcTy);
     Symbols.addFunction(funcName, funcTy);
     SymTable::ScopeId sc = Symbols.pushNewScope(funcName);
     putScopeDecor(ctx, sc);
