@@ -297,7 +297,7 @@ std::any TypeCheckVisitor::visitLeftArray(AslParser::LeftArrayContext *ctx) {
   visit(ctx->expr());
   TypesMgr::TypeId t1 = getTypeDecor(ctx->ident());
   TypesMgr::TypeId t2 = getTypeDecor(ctx->expr());
-  bool b = false;
+  bool b = Types.isErrorTy(t1) or Types.isErrorTy(t2);
   if ((not Types.isErrorTy(t1)) and (not Types.isArrayTy(t1))) {
     Errors.nonArrayInArrayAccess(ctx->ident());
     b = true;
@@ -375,6 +375,29 @@ std::any TypeCheckVisitor::visitLogical(AslParser::LogicalContext *ctx) {
   return 0;
 }
 
+std::any TypeCheckVisitor::visitUnary(AslParser::UnaryContext *ctx) {
+  DEBUG_ENTER();
+  if (ctx->op->getText() == "-" or ctx->op->getText() == "+") {
+    visit(ctx->expr());
+    TypesMgr::TypeId t1 = getTypeDecor(ctx->expr());
+    if ((not Types.isErrorTy(t1)) and (not Types.isNumericTy(t1)))
+      Errors.incompatibleOperator(ctx->op);
+    TypesMgr::TypeId t = Types.createIntegerTy();
+    putTypeDecor(ctx, t);
+    putIsLValueDecor(ctx, false);
+  }
+  else {
+    visit(ctx->expr());
+    TypesMgr::TypeId t1 = getTypeDecor(ctx->expr());
+    if ((not Types.isErrorTy(t1)) and (not Types.isBooleanTy(t1)))
+      Errors.incompatibleOperator(ctx->op);
+    TypesMgr::TypeId t = Types.createBooleanTy();
+    putTypeDecor(ctx, t);
+    putIsLValueDecor(ctx, false);
+  }
+  return 0;
+}
+
 std::any TypeCheckVisitor::visitParent(AslParser::ParentContext *ctx) {
   DEBUG_ENTER();
   visit(ctx->expr());
@@ -417,9 +440,10 @@ std::any TypeCheckVisitor::visitArray(AslParser::ArrayContext *ctx) {
   DEBUG_ENTER();
   visit(ctx->ident());
   visit(ctx->expr());
-  bool b = false;
   TypesMgr::TypeId t1 = getTypeDecor(ctx->ident());
   TypesMgr::TypeId t2 = getTypeDecor(ctx->expr());
+
+  bool b = Types.isErrorTy(t1);
   if ((not Types.isErrorTy(t1)) and (not Types.isArrayTy(t1))) {
     Errors.nonArrayInArrayAccess(ctx->ident());
     b = true;
@@ -427,7 +451,6 @@ std::any TypeCheckVisitor::visitArray(AslParser::ArrayContext *ctx) {
 
   if ((not Types.isErrorTy(t2)) and (not Types.isIntegerTy(t2))) {
     Errors.nonIntegerIndexInArrayAccess(ctx->expr());
-    b = true;
   }
 
   if (not b) {
@@ -468,17 +491,18 @@ std::any TypeCheckVisitor::visitFuncCall(AslParser::FuncCallContext *ctx) {
     }
   }
 
-  if (not b) {
-    int i = 0;
-    for (auto ctxExpr : ctx->expr()) {
-      visit(ctxExpr);
-      if (not Types.isErrorTy(getTypeDecor(ctxExpr))) {
+  int i = 0;
+  for (auto ctxExpr : ctx->expr()) {
+    visit(ctxExpr);
+    if (not Types.isErrorTy(getTypeDecor(ctxExpr))) {
+      if (not b) {
         TypesMgr::TypeId t2 = Types.getParameterType(t1, i);
         if (not Types.isErrorTy(t2) and not Types.copyableTypes(t2, getTypeDecor(ctxExpr))) {
+          Errors.incompatibleParameter(ctxExpr, i+1, ctx);
         }
       }
-      ++i;
     }
+    ++i;
   }
 
   if (not b) {

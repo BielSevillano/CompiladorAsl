@@ -83,6 +83,7 @@ public:
   std::any visitArithmetic(AslParser::ArithmeticContext *ctx);
   std::any visitRelational(AslParser::RelationalContext *ctx);
   std::any visitLogical(AslParser::LogicalContext *ctx);
+  std::any visitUnary(AslParser::UnaryContext *ctx);
   std::any visitValue(AslParser::ValueContext *ctx);
   std::any visitIdent(AslParser::IdentContext *ctx);
   std::any visitFuncCall(AslParser::FuncCallContext *ctx);

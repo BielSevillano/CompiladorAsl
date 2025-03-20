@@ -84,8 +84,13 @@ std::any SymbolsVisitor::visitFunction(AslParser::FunctionContext *ctx) {
     std::vector<TypesMgr::TypeId> lParamsTy;
 
     if (ctx->parameters()) 
-      for (auto param : ctx->parameters()->parameter()) 
-        lParamsTy.push_back(getTypeDecor(param));
+      for (auto param : ctx->parameters()->parameter())  {
+        visit(param->type());
+        if (param->type()->basic_type())
+          lParamsTy.push_back(getTypeDecor(param->type()->basic_type()));
+        else
+          lParamsTy.push_back(getTypeDecor(param->type()->array_type()));
+      }
     else
       lParamsTy = {};
 
