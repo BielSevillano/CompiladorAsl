@@ -226,20 +226,24 @@ std::any TypeCheckVisitor::visitProcCall(AslParser::ProcCallContext *ctx) {
   DEBUG_ENTER();
   visit(ctx->ident());
   TypesMgr::TypeId t1 = getTypeDecor(ctx->ident());
-  if (Types.isErrorTy(t1)) {
-    ;
-  } else if (not Types.isFunctionTy(t1)) {
+  bool b = Types.isErrorTy(t1);
+
+  if (not b and not Types.isFunctionTy(t1)) {
     Errors.isNotCallable(ctx->ident());
-  } else if (Types.getNumOfParameters(t1) != ctx->expr().size()) {
+  } 
+  
+  if (Types.isFunctionTy(t1) and Types.getNumOfParameters(t1) != ctx->expr().size()) {
     Errors.numberOfParameters(ctx);
-  } else {
+  } 
+  
+  if (Types.isFunctionTy(t1)) {
     int i = 0;
     for (auto ctxExpr : ctx->expr()) {
       visit(ctxExpr);
-      if (not Types.isErrorTy(getTypeDecor(ctxExpr))) {
+      if (not Types.isErrorTy(getTypeDecor(ctxExpr)) and i < int(Types.getNumOfParameters(t1))) {
         TypesMgr::TypeId t2 = Types.getParameterType(t1, i);
         if (not Types.isErrorTy(t2) and not Types.copyableTypes(t2, getTypeDecor(ctxExpr))) {
-          Errors.incompatibleParameter(ctx, i, ctxExpr);
+          Errors.incompatibleParameter(ctxExpr, i+1, ctx);
         }
       }
       ++i;
@@ -284,9 +288,18 @@ std::any TypeCheckVisitor::visitLeftIdent(AslParser::LeftIdentContext *ctx) {
 
   visit(ctx->ident());
   TypesMgr::TypeId t1 = getTypeDecor(ctx->ident());
-  putTypeDecor(ctx, t1);
-  bool b = getIsLValueDecor(ctx->ident());
-  putIsLValueDecor(ctx, b);
+  if (Types.isErrorTy(t1)) {
+    TypesMgr::TypeId te = Types.createErrorTy();
+    putTypeDecor(ctx, te);
+  }
+  else if (Types.isFunctionTy(t1)) {
+    Errors.nonReferenceableLeftExpr(ctx);
+    putTypeDecor(ctx, t1);
+  }
+  else {
+    putTypeDecor(ctx, t1);
+  }
+  putIsLValueDecor(ctx, true);
   DEBUG_EXIT();
   return 0;
 }
@@ -326,8 +339,12 @@ std::any TypeCheckVisitor::visitArithmetic(AslParser::ArithmeticContext *ctx) {
   TypesMgr::TypeId t1 = getTypeDecor(ctx->expr(0));
   visit(ctx->expr(1));
   TypesMgr::TypeId t2 = getTypeDecor(ctx->expr(1));
-  if (((not Types.isErrorTy(t1)) and (not Types.isNumericTy(t1))) or
-      ((not Types.isErrorTy(t2)) and (not Types.isNumericTy(t2))))
+  if (ctx->op->getText() == "%" and (((not Types.isErrorTy(t1)) and (not Types.isIntegerTy(t1))) or
+     ((not Types.isErrorTy(t2)) and (not Types.isIntegerTy(t2))))) {
+    Errors.incompatibleOperator(ctx->op);
+  }
+  else if (((not Types.isErrorTy(t1)) and (not Types.isNumericTy(t1))) or
+          ((not Types.isErrorTy(t2)) and (not Types.isNumericTy(t2))))
     Errors.incompatibleOperator(ctx->op);
     
   TypesMgr::TypeId t;
@@ -403,7 +420,7 @@ std::any TypeCheckVisitor::visitParent(AslParser::ParentContext *ctx) {
   visit(ctx->expr());
   TypesMgr::TypeId t1 = getTypeDecor(ctx->expr());
   putTypeDecor(ctx, t1);
-  putIsLValueDecor(ctx, getIsLValueDecor(ctx->expr()));
+  putIsLValueDecor(ctx, false);
   DEBUG_EXIT();
   return 0;
 }
@@ -430,8 +447,7 @@ std::any TypeCheckVisitor::visitExprIdent(AslParser::ExprIdentContext *ctx) {
   visit(ctx->ident());
   TypesMgr::TypeId t1 = getTypeDecor(ctx->ident());
   putTypeDecor(ctx, t1);
-  bool b = getIsLValueDecor(ctx->ident());
-  putIsLValueDecor(ctx, b);
+  putIsLValueDecor(ctx, false);
   DEBUG_EXIT();
   return 0;
 }
@@ -482,7 +498,7 @@ std::any TypeCheckVisitor::visitFuncCall(AslParser::FuncCallContext *ctx) {
     b = true;
   }
 
-  if (not b) {
+  if (Types.isFunctionTy(t1)) {
     int n = Types.getNumOfParameters(t1);
     int s = ctx->expr().size();
     if (n != s) {
@@ -495,7 +511,7 @@ std::any TypeCheckVisitor::visitFuncCall(AslParser::FuncCallContext *ctx) {
   for (auto ctxExpr : ctx->expr()) {
     visit(ctxExpr);
     if (not Types.isErrorTy(getTypeDecor(ctxExpr))) {
-      if (not b) {
+      if (Types.isFunctionTy(t1) and i < int(Types.getNumOfParameters(t1))) {
         TypesMgr::TypeId t2 = Types.getParameterType(t1, i);
         if (not Types.isErrorTy(t2) and not Types.copyableTypes(t2, getTypeDecor(ctxExpr))) {
           Errors.incompatibleParameter(ctxExpr, i+1, ctx);
@@ -526,15 +542,10 @@ std::any TypeCheckVisitor::visitIdent(AslParser::IdentContext *ctx) {
     Errors.undeclaredIdent(ctx->ID());
     TypesMgr::TypeId te = Types.createErrorTy();
     putTypeDecor(ctx, te);
-    putIsLValueDecor(ctx, true);
   }
   else {
     TypesMgr::TypeId t1 = Symbols.getType(ident);
     putTypeDecor(ctx, t1);
-    if (Symbols.isFunctionClass(ident))
-      putIsLValueDecor(ctx, false);
-    else
-      putIsLValueDecor(ctx, true);
   }
   DEBUG_EXIT();
   return 0;
