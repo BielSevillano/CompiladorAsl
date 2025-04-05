@@ -262,6 +262,8 @@ std::any TypeCheckVisitor::visitReadStmt(AslParser::ReadStmtContext *ctx) {
     Errors.readWriteRequireBasic(ctx);
   if ((not Types.isErrorTy(t1)) and (not getIsLValueDecor(ctx->left_expr())))
     Errors.nonReferenceableExpression(ctx);
+
+
   DEBUG_EXIT();
   return 0;
 }
@@ -293,13 +295,13 @@ std::any TypeCheckVisitor::visitLeftIdent(AslParser::LeftIdentContext *ctx) {
     putTypeDecor(ctx, te);
   }
   else if (Types.isFunctionTy(t1)) {
-    Errors.nonReferenceableLeftExpr(ctx);
     putTypeDecor(ctx, t1);
+    putIsLValueDecor(ctx, false);
   }
   else {
     putTypeDecor(ctx, t1);
+    putIsLValueDecor(ctx, true);
   }
-  putIsLValueDecor(ctx, true);
   DEBUG_EXIT();
   return 0;
 }
