@@ -101,8 +101,10 @@ std::any CodeGenVisitor::visitDeclarations(AslParser::DeclarationsContext *ctx) 
   DEBUG_ENTER();
   std::vector<var> lvars;
   for (auto & varDeclCtx : ctx->variable_decl()) {
-    var onevar = std::any_cast<var>(visit(varDeclCtx));
-    lvars.push_back(onevar);
+    std::vector<var> lvars1 = std::any_cast<std::vector<var>>(visit(varDeclCtx));
+    for (auto & onevar : lvars1) {
+      lvars.push_back(onevar);
+    }
   }
   DEBUG_EXIT();
   return lvars;
@@ -157,7 +159,10 @@ std::any CodeGenVisitor::visitIfStmt(AslParser::IfStmtContext *ctx) {
   std::string          addr1 = codAtsE.addr;
   instructionList &    code1 = codAtsE.code;
   instructionList &&   code2 = std::any_cast<instructionList>(visit(ctx->statements(0)));
-  instructionList &&   code3 = std::any_cast<instructionList>(visit(ctx->statements(1)));
+
+  if (ctx->statements().size() == 2) {
+    instructionList &&   code3 = std::any_cast<instructionList>(visit(ctx->statements(1)));
+  }
   std::string label = codeCounters.newLabelIF();
   std::string labelEndIf = "endif"+label;
   code = code1 || instruction::FJUMP(addr1, labelEndIf) ||

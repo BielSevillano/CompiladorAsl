@@ -167,6 +167,13 @@ std::any SymbolsVisitor::visitType(AslParser::TypeContext *ctx) {
     visit(ctx->basic_type());
   else
     visit(ctx->array_type());
+  
+  TypesMgr::TypeId t1;
+  if (ctx->basic_type())
+    t1 = getTypeDecor(ctx->basic_type());
+  else
+    t1 = getTypeDecor(ctx->array_type());
+  putTypeDecor(ctx, t1);
   DEBUG_EXIT();
   return 0;
 }
