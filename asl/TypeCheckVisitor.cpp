@@ -341,7 +341,7 @@ std::any TypeCheckVisitor::visitArithmetic(AslParser::ArithmeticContext *ctx) {
   TypesMgr::TypeId t1 = getTypeDecor(ctx->expr(0));
   visit(ctx->expr(1));
   TypesMgr::TypeId t2 = getTypeDecor(ctx->expr(1));
-  if (ctx->op->getText() == "%" and (((not Types.isErrorTy(t1)) and (not Types.isIntegerTy(t1))) or
+  if (ctx->MOD() and (((not Types.isErrorTy(t1)) and (not Types.isIntegerTy(t1))) or
      ((not Types.isErrorTy(t2)) and (not Types.isIntegerTy(t2))))) {
     Errors.incompatibleOperator(ctx->op);
   }
@@ -401,8 +401,7 @@ std::any TypeCheckVisitor::visitUnary(AslParser::UnaryContext *ctx) {
     TypesMgr::TypeId t1 = getTypeDecor(ctx->expr());
     if ((not Types.isErrorTy(t1)) and (not Types.isNumericTy(t1)))
       Errors.incompatibleOperator(ctx->op);
-    TypesMgr::TypeId t = Types.createIntegerTy();
-    putTypeDecor(ctx, t);
+    putTypeDecor(ctx, t1);
     putIsLValueDecor(ctx, false);
   }
   else {
