@@ -91,6 +91,7 @@ public:
 
   std::any visitValue(AslParser::ValueContext *ctx);
   std::any visitIdent(AslParser::IdentContext *ctx);
+  std::any visitArray(AslParser::ArrayContext *ctx);
   std::any visitParent(AslParser::ParentContext *ctx);
   std::any visitUnary(AslParser::UnaryContext *ctx);
 

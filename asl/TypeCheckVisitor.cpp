@@ -296,7 +296,7 @@ std::any TypeCheckVisitor::visitLeftIdent(AslParser::LeftIdentContext *ctx) {
   }
   else if (Types.isFunctionTy(t1)) {
     putTypeDecor(ctx, t1);
-    putIsLValueDecor(ctx, false);
+    putIsLValueDecor(ctx, true);
   }
   else {
     putTypeDecor(ctx, t1);
