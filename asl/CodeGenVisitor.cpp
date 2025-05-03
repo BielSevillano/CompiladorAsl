@@ -94,7 +94,11 @@ std::any CodeGenVisitor::visitFunction(AslParser::FunctionContext *ctx) {
   if (ctx->parameters()) {
     for (auto & oneparam : ctx->parameters()->parameter()) {
       TypesMgr::TypeId t1 = getTypeDecor(oneparam->type());
-      subr.add_param(oneparam->ID()->getText(), Types.to_string(t1), false);
+      bool isarray = Types.isArrayTy(t1);
+      if (isarray) {
+        t1 = Types.getArrayElemType(t1);
+      }
+      subr.add_param(oneparam->ID()->getText(), Types.to_string(t1), isarray);
     }
   }
 
@@ -270,6 +274,11 @@ std::any CodeGenVisitor::visitProcCall(AslParser::ProcCallContext *ctx) {
         code = code || instruction::FLOAT(temp, addr1);
         addr1 = temp;
       }
+      else if (Types.isArrayTy(paramsTypes[i])) {
+        std::string temp = "%"+codeCounters.newTEMP();
+        code = code || instruction::ALOAD(temp, addr1);
+        addr1 = temp;
+      }
       
       code = code || instruction::PUSH(addr1);
 
@@ -351,9 +360,13 @@ std::any CodeGenVisitor::visitFuncCall(AslParser::FuncCallContext *ctx) {
         code = code || instruction::FLOAT(temp, addr1);
         addr1 = temp;
       }
+      else if (Types.isArrayTy(paramsTypes[i])) {
+        std::string temp = "%"+codeCounters.newTEMP();
+        code = code || instruction::ALOAD(temp, addr1);
+        addr1 = temp;
+      }
       
       code = code || instruction::PUSH(addr1);
-
       ++i;
     }
   }
@@ -431,6 +444,13 @@ std::any CodeGenVisitor::visitLeftArray(AslParser::LeftArrayContext *ctx) {
   CodeAttribs && codAt1 = std::any_cast<CodeAttribs>(visit(ctx->ident()));
   std::string     addr1 = codAt1.addr;
   instructionList & code1 = codAt1.code;
+
+  if (Symbols.isParameterClass(ctx->ident()->getText())) {
+    std::string temp = "%"+codeCounters.newTEMP();
+    code1 = code1 || instruction::LOAD(temp, addr1);
+    addr1 = temp;
+  }
+
   CodeAttribs && codAt2 = std::any_cast<CodeAttribs>(visit(ctx->expr()));
   std::string     addr2 = codAt2.addr;
   instructionList & code2 = codAt2.code;
@@ -642,8 +662,14 @@ std::any CodeGenVisitor::visitArray(AslParser::ArrayContext *ctx) {
   instructionList & code2 = codAt2.code;
   instructionList && code = code1 || code2;
 
-  std::string temp = "%"+codeCounters.newTEMP();
+  if (Symbols.isParameterClass(ctx->ident()->getText())) {
+    std::string temp = "%"+codeCounters.newTEMP();
+    code1 = code1 || instruction::LOAD(temp, addr1);
+    addr1 = temp;
+  }
 
+  code = code1 || code2;
+  std::string temp = "%"+codeCounters.newTEMP();
   code = code || instruction::LOADX(temp, addr1, addr2);
 
   DEBUG_EXIT();
