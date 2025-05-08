@@ -89,6 +89,7 @@ std::any CodeGenVisitor::visitFunction(AslParser::FunctionContext *ctx) {
   if (ctx->basic_type()) {
     TypesMgr::TypeId t1 = getTypeDecor(ctx->basic_type());
     subr.add_param("_result", Types.to_string(t1), false);
+    setCurrentFunctionTy(t1);
   }
 
   if (ctx->parameters()) {
@@ -196,6 +197,48 @@ std::any CodeGenVisitor::visitAssignStmt(AslParser::AssignStmtContext *ctx) {
   if (offs1 != "") {
     code = code || instruction::XLOAD(addr1, offs1, addr2);
   }
+  else if (Types.isArrayTy(tid2) and Symbols.isParameterClass(ctx->expr()->getText())) {
+      std::string temp = "%"+codeCounters.newTEMP();
+      code = code || instruction::LOAD(temp, addr2);
+      addr2 = temp;
+    if (Symbols.isParameterClass(ctx->left_expr()->getText())) {
+      code = code || instruction::LOAD(addr1, addr2);
+    }
+    else {
+      int i = Types.getSizeOfType(tid1);
+      for (int j = 1; j < i; ++j) {
+        std::string temp = "%"+codeCounters.newTEMP();
+        code = code || instruction::LOADX(temp, addr2, std::to_string(j));
+        code = code || instruction::XLOAD(addr1, temp, std::to_string(j));
+      }
+    }
+  }
+  else if (Types.isArrayTy(tid2)) {
+    if (Symbols.isParameterClass(ctx->left_expr()->getText())) {  
+      int i = Types.getSizeOfType(tid1);
+      for (int j = 0; j < i; ++j) {
+        std::string temp = "%"+codeCounters.newTEMP();
+        std::string temp2 = "%"+codeCounters.newTEMP();
+        std::string offs = "%"+codeCounters.newTEMP();
+        code = code || instruction::LOAD(offs, std::to_string(j));
+        code = code || instruction::LOAD(temp2, addr1);
+        code = code || instruction::LOADX(temp, addr2, offs);
+        code = code || instruction::XLOAD(temp2, offs, temp);
+      }
+    }
+    else {
+      int i = Types.getSizeOfType(tid1);
+      for (int j = 0; j < i; ++j) {
+        std::string temp = "%"+codeCounters.newTEMP();
+        std::string temp2 = "%"+codeCounters.newTEMP();
+        std::string offs = "%"+codeCounters.newTEMP();
+        code = code || instruction::LOAD(offs, std::to_string(j));
+        code = code || instruction::LOADX(temp, addr2, offs);
+        code = code || instruction::LOAD(temp2, addr1);
+        code = code || instruction::XLOAD(addr1, offs, temp);
+      }
+    }
+  }
   else {
     code = code || instruction::LOAD(addr1, addr2);
   }
@@ -274,7 +317,7 @@ std::any CodeGenVisitor::visitProcCall(AslParser::ProcCallContext *ctx) {
         code = code || instruction::FLOAT(temp, addr1);
         addr1 = temp;
       }
-      else if (Types.isArrayTy(paramsTypes[i])) {
+      else if (Types.isArrayTy(paramsTypes[i]) and not Symbols.isParameterClass(exprCtx->getText())) {
         std::string temp = "%"+codeCounters.newTEMP();
         code = code || instruction::ALOAD(temp, addr1);
         addr1 = temp;
@@ -360,7 +403,7 @@ std::any CodeGenVisitor::visitFuncCall(AslParser::FuncCallContext *ctx) {
         code = code || instruction::FLOAT(temp, addr1);
         addr1 = temp;
       }
-      else if (Types.isArrayTy(paramsTypes[i])) {
+      else if (Types.isArrayTy(paramsTypes[i]) and not Symbols.isParameterClass(exprCtx->getText())) {
         std::string temp = "%"+codeCounters.newTEMP();
         code = code || instruction::ALOAD(temp, addr1);
         addr1 = temp;
@@ -424,6 +467,13 @@ std::any CodeGenVisitor::visitReturnStmt(AslParser::ReturnStmtContext *ctx) {
     CodeAttribs && codAtsE = std::any_cast<CodeAttribs>(visit(ctx->expr()));
     std::string addr1 = codAtsE.addr;
     instructionList & code1 = codAtsE.code;
+    TypesMgr::TypeId tid1 = getTypeDecor(ctx->expr());
+    TypesMgr::TypeId t = getCurrentFunctionTy();
+    if (Types.isFloatTy(t) and Types.isIntegerTy(tid1)) {
+      std::string temp = "%"+codeCounters.newTEMP();
+      code1 = code1 || instruction::FLOAT(temp, addr1);
+      addr1 = temp;
+    }
     code = code1 || instruction::LOAD("_result", addr1);
   }
 
@@ -513,6 +563,18 @@ std::any CodeGenVisitor::visitArithmetic(AslParser::ArithmeticContext *ctx) {
       code = code || instruction::FDIV(temp, addr1, addr2);
     }
   }
+  else if (ctx->MOD()) {
+    if (Types.isIntegerTy(t)) {
+      code = code || instruction::DIV(temp, addr1, addr2);
+      std::string temp3 = "%"+codeCounters.newTEMP();
+      code = code || instruction::MUL(temp3, temp, addr2);
+      temp = "%"+codeCounters.newTEMP();
+      code = code || instruction::SUB(temp, addr1, temp3);
+    } else {
+      std::cerr << "Error: Mod operator not supported for float types." << std::endl;
+    }
+  }
+  
   CodeAttribs codAts(temp, "", code);
   DEBUG_EXIT();
   return codAts;
@@ -548,26 +610,50 @@ std::any CodeGenVisitor::visitRelational(AslParser::RelationalContext *ctx) {
   }
 
   std::string temp = "%"+codeCounters.newTEMP();
-  if (ctx->EQUAL()) {
-    code = code || instruction::EQ(temp, addr1, addr2);
-  }
-  else if (ctx->NE()) {
 
-    std::string temp2 = "%"+codeCounters.newTEMP();
-    code = code || instruction::EQ(temp2, addr1, addr2);
-    code = code || instruction::NOT(temp, temp2);
-  } else if (ctx->LT()) {
-    code = code || instruction::LT(temp, addr1, addr2);
-  } else if (ctx->LE()) {
-    code = code || instruction::LE(temp, addr1, addr2);
-  } else if (ctx->GT()) {
-    std::string temp2 = "%"+codeCounters.newTEMP();
-    code = code || instruction::LE(temp2, addr1, addr2);
-    code = code || instruction::NOT(temp, temp2);
-  } else if (ctx->GE()) {
-    std::string temp2 = "%"+codeCounters.newTEMP();
-    code = code || instruction::LT(temp2, addr1, addr2);
-    code = code || instruction::NOT(temp, temp2);
+  if (Types.isFloatTy(t1) or Types.isFloatTy(t2)) {
+    if (ctx->EQUAL()) {
+      code = code || instruction::FEQ(temp, addr1, addr2);
+    }
+    else if (ctx->NE()) {
+      std::string temp2 = "%"+codeCounters.newTEMP();
+      code = code || instruction::FEQ(temp2, addr1, addr2);
+      code = code || instruction::NOT(temp, temp2);
+    } else if (ctx->LT()) {
+      code = code || instruction::FLT(temp, addr1, addr2);
+    } else if (ctx->LE()) {
+      code = code || instruction::FLE(temp, addr1, addr2);
+    } else if (ctx->GT()) {
+      std::string temp2 = "%"+codeCounters.newTEMP();
+      code = code || instruction::FLE(temp2, addr1, addr2);
+      code = code || instruction::NOT(temp, temp2);
+    } else if (ctx->GE()) {
+      std::string temp2 = "%"+codeCounters.newTEMP();
+      code = code || instruction::FLT(temp2, addr1, addr2);
+      code = code || instruction::NOT(temp, temp2);
+    }
+  }
+  else {
+    if (ctx->EQUAL()) {
+      code = code || instruction::EQ(temp, addr1, addr2);
+    }
+    else if (ctx->NE()) {
+      std::string temp2 = "%"+codeCounters.newTEMP();
+      code = code || instruction::EQ(temp2, addr1, addr2);
+      code = code || instruction::NOT(temp, temp2);
+    } else if (ctx->LT()) {
+      code = code || instruction::LT(temp, addr1, addr2);
+    } else if (ctx->LE()) {
+      code = code || instruction::LE(temp, addr1, addr2);
+    } else if (ctx->GT()) {
+      std::string temp2 = "%"+codeCounters.newTEMP();
+      code = code || instruction::LE(temp2, addr1, addr2);
+      code = code || instruction::NOT(temp, temp2);
+    } else if (ctx->GE()) {
+      std::string temp2 = "%"+codeCounters.newTEMP();
+      code = code || instruction::LT(temp2, addr1, addr2);
+      code = code || instruction::NOT(temp, temp2);
+    }
   }
   CodeAttribs codAts(temp, "", code);
   DEBUG_EXIT();
@@ -609,8 +695,10 @@ std::any CodeGenVisitor::visitUnary(AslParser::UnaryContext *ctx) {
     } else {
       code1 = code1 || instruction::FNEG(temp, addr1);
     }
-  else // (ctx->NOT())
+  else if (ctx->NOT())
     code1 = code1 || instruction::NOT(temp, addr1);
+  else if (ctx->PLUS())
+    temp = addr1;
   CodeAttribs codAts(temp, "", code1);
   DEBUG_EXIT();
   return codAts;
@@ -625,7 +713,7 @@ std::any CodeGenVisitor::visitValue(AslParser::ValueContext *ctx) {
   } else if (ctx->FLOATVAL()) {
     code = instruction::FLOAD(temp, ctx->FLOATVAL()->getText());
   } else if (ctx->CHARVAL()) {
-    code = instruction::CHLOAD(temp, ctx->CHARVAL()->getText());
+    code = instruction::LOAD(temp, ctx->CHARVAL()->getText());
   } else if (ctx->BOOLVAL()) {
     if (ctx->BOOLVAL()->getText() == "true") {
       code = instruction::ILOAD(temp, "1");
